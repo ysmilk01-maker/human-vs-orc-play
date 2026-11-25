@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#17120D">
+<title>휴먼 vs 오크 · 시험판 1차</title>
+<style>
+/* 한 화면짜리 게임: 세로 화면 틀 하나에 캔버스를 가득 채우고, 불러오는 동안에는 대표 그림 위에 문장·제목·진행 띠를 보여 준다 */
+:root{--bg:#17120D;--frame:#1E1710;--fg:#F3E8D4;--muted:#BBAA8B;--gold:#F7D57E;--ink:#3A2408;--bar:#32261A;--warn:#FF9A8A;--human:#9DBDFF;--orc:#FF8E7A;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',system-ui,sans-serif;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+#frame{position:relative;margin:auto;width:min(100vw,56.25vh);height:100%;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);background:var(--frame);box-shadow:0 0 90px rgba(0,0,0,.55)}
+@media(max-aspect-ratio:3/4){#frame{width:100vw}}
+canvas{width:100%;height:100%;display:block;outline:none;background:var(--bg)}
+#loading{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;text-align:center;overflow:hidden;
+  background:linear-gradient(180deg,rgba(10,7,4,.62),rgba(10,7,4,.18) 46%,rgba(10,7,4,.92)),url('img/title_vs.jpg') center/cover no-repeat,var(--bg)}
+#loading img{width:92px;height:92px;margin-top:19vh;filter:drop-shadow(0 4px 6px rgba(0,0,0,.65))}
+#loading h1{margin:6px 0 0;font-size:clamp(40px,13vw,62px);font-weight:900;line-height:1.05;letter-spacing:.03em;white-space:nowrap;-webkit-text-stroke:2px var(--ink);paint-order:stroke fill;text-shadow:0 4px 0 var(--ink),0 10px 22px rgba(0,0,0,.7)}
+#loading h1 .h{color:var(--human)}
+#loading h1 .o{color:var(--orc)}
+#loading h1 i{font-style:normal;font-size:.5em;color:var(--gold);margin:0 .14em}
+#loading .tag{margin-top:8px;font-size:15px;letter-spacing:.14em;color:#FBEBC4;text-shadow:0 2px 6px rgba(0,0,0,.95)}
+#loading .bottom{position:absolute;left:0;right:0;bottom:max(13%,calc(env(safe-area-inset-bottom) + 60px));padding:0 max(24px,env(safe-area-inset-left)) 0 max(24px,env(safe-area-inset-right))}
+#message{font-size:15px;font-weight:700;color:var(--gold);letter-spacing:.08em;text-shadow:0 2px 6px rgba(0,0,0,.95)}
+#bar{width:72%;max-width:300px;height:10px;margin:12px auto 0;background:var(--bar);clip-path:polygon(0 0,100% 0,97% 50%,100% 100%,0 100%,3% 50%)}
+#fill{height:100%;width:0;background:linear-gradient(180deg,#FFE9A6,#C48A24);transition:width .25s ease-out}
+#error{margin-top:14px;font-size:13px;line-height:1.6;color:var(--warn);white-space:pre-wrap;-webkit-user-select:text;user-select:text;text-shadow:0 1px 4px rgba(0,0,0,.9)}
+#loading footer{position:absolute;left:0;right:0;bottom:max(18px,env(safe-area-inset-bottom));font-size:12px;color:var(--muted);letter-spacing:.04em}
+#loading.done{display:none}
+@media(prefers-reduced-motion:reduce){#fill{transition:none}}
+</style>
+</head>
+<body>
+<main id="frame">
+  <canvas id="unity-canvas" tabindex="0" aria-label="휴먼 vs 오크 게임"></canvas>
+  <div id="loading">
+    <img src="img/emblem.png" alt="">
+    <h1 aria-label="휴먼 vs 오크"><span class="h">휴먼</span><i>vs</i><span class="o">오크</span></h1>
+    <div class="tag">이 땅의 주인을 가려라</div>
+    <div class="bottom">
+      <div id="message">불러오는 중입니다</div>
+      <div id="bar"><div id="fill"></div></div>
+      <div id="error"></div>
+    </div>
+    <footer>시험판 1차 · 유니티</footer>
+  </div>
+</main>
+<script src="Build/web.loader.js?v=1"></script>
+<script>
+(function(){
+  var V='1';
+  var canvas=document.getElementById('unity-canvas'),fill=document.getElementById('fill'),msg=document.getElementById('message'),err=document.getElementById('error'),loading=document.getElementById('loading');
+  function fail(e){msg.textContent='불러오지 못했습니다';err.textContent=(e&&e.message?e.message:String(e))+'\n화면을 새로 고쳐 보세요.';}
+  window.addEventListener('error',function(e){if(!window.__unity&&e&&e.message) err.textContent='오류: '+e.message;});
+  // 긴 누르기 메뉴와 두 손가락 확대를 막는다(판을 밀 때 브라우저가 끼어들지 않게)
+  document.addEventListener('contextmenu',function(e){e.preventDefault();});
+  document.addEventListener('gesturestart',function(e){e.preventDefault();});
+  if(typeof createUnityInstance!=='function'){fail('게임 파일(loader)을 읽지 못했습니다');return;}
+  createUnityInstance(canvas,{
+    dataUrl:'Build/web.data.unityweb?v='+V,
+    frameworkUrl:'Build/web.framework.js.unityweb?v='+V,
+    codeUrl:'Build/web.wasm.unityweb?v='+V,
+    streamingAssetsUrl:'StreamingAssets',
+    companyName:'NineToSixLab',productName:'휴먼 vs 오크',productVersion:'0.1',
+    devicePixelRatio:Math.min(window.devicePixelRatio||1,2)
+  },function(p){
+    fill.style.width=Math.round(p*100)+'%';
+    if(p>=0.9) msg.textContent='거의 다 됐습니다';
+  }).then(function(inst){
+    window.__unity=inst;loading.classList.add('done');
+  }).catch(fail);
+})();
+</script>
+</body>
+</html>
