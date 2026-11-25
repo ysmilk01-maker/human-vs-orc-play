@@ -6,12 +6,15 @@
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#17120D">
-<title>휴먼 vs 오크 · 시험판 1차</title>
+<title>휴먼 vs 오크 · 시험판 2차</title>
 <style>
 /* 한 화면짜리 게임: 세로 화면 틀 하나에 캔버스를 가득 채우고, 불러오는 동안에는 대표 그림 위에 문장·제목·진행 띠를 보여 준다 */
 :root{--bg:#17120D;--frame:#1E1710;--fg:#F3E8D4;--muted:#BBAA8B;--gold:#F7D57E;--ink:#3A2408;--bar:#32261A;--warn:#FF9A8A;--human:#9DBDFF;--orc:#FF8E7A;color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--fg);font-family:'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',system-ui,sans-serif;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html:lang(ja) body{font-family:'Hiragino Sans','Hiragino Kaku Gothic ProN','Yu Gothic','Meiryo','Noto Sans JP',system-ui,sans-serif}
+html:lang(zh-Hant) body{font-family:'PingFang TC','Microsoft JhengHei','Noto Sans TC',system-ui,sans-serif}
+html:lang(en) body{font-family:system-ui,'Segoe UI',Roboto,'Helvetica Neue',sans-serif}
 #frame{position:relative;margin:auto;width:min(100vw,56.25vh);height:100%;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);background:var(--frame);box-shadow:0 0 90px rgba(0,0,0,.55)}
 @media(max-aspect-ratio:3/4){#frame{width:100vw}}
 canvas{width:100%;height:100%;display:block;outline:none;background:var(--bg)}
@@ -19,6 +22,7 @@ canvas{width:100%;height:100%;display:block;outline:none;background:var(--bg)}
   background:linear-gradient(180deg,rgba(10,7,4,.62),rgba(10,7,4,.18) 46%,rgba(10,7,4,.92)),url('img/title_vs.jpg') center/cover no-repeat,var(--bg)}
 #loading img{width:92px;height:92px;margin-top:19vh;filter:drop-shadow(0 4px 6px rgba(0,0,0,.65))}
 #loading h1{margin:6px 0 0;font-size:clamp(40px,13vw,62px);font-weight:900;line-height:1.05;letter-spacing:.03em;white-space:nowrap;-webkit-text-stroke:2px var(--ink);paint-order:stroke fill;text-shadow:0 4px 0 var(--ink),0 10px 22px rgba(0,0,0,.7)}
+#loading h1.long{font-size:clamp(28px,9vw,46px)}
 #loading h1 .h{color:var(--human)}
 #loading h1 .o{color:var(--orc)}
 #loading h1 i{font-style:normal;font-size:.5em;color:var(--gold);margin:0 .14em}
@@ -35,30 +39,56 @@ canvas{width:100%;height:100%;display:block;outline:none;background:var(--bg)}
 </head>
 <body>
 <main id="frame">
-  <canvas id="unity-canvas" tabindex="0" aria-label="휴먼 vs 오크 게임"></canvas>
+  <canvas id="unity-canvas" tabindex="0" aria-label="휴먼 vs 오크"></canvas>
   <div id="loading">
     <img src="img/emblem.png" alt="">
-    <h1 aria-label="휴먼 vs 오크"><span class="h">휴먼</span><i>vs</i><span class="o">오크</span></h1>
-    <div class="tag">이 땅의 주인을 가려라</div>
+    <h1 id="title" aria-label="휴먼 vs 오크"><span class="h">휴먼</span><i>vs</i><span class="o">오크</span></h1>
+    <div class="tag" id="tag">이 땅의 주인을 가려라</div>
     <div class="bottom">
       <div id="message">불러오는 중입니다</div>
       <div id="bar"><div id="fill"></div></div>
       <div id="error"></div>
     </div>
-    <footer>시험판 1차 · 유니티</footer>
+    <footer id="foot">시험판 2차 · 유니티</footer>
   </div>
 </main>
-<script src="Build/web.loader.js?v=1"></script>
+<script src="Build/web.loader.js?v=2"></script>
 <script>
 (function(){
-  var V='1';
+  var V='2', R=2;   // V: 파일을 새로 받게 하는 꼬리표, R: 시험판 몇 차
+  // 받는 화면의 글귀. 게임 안 언어는 게임이 따로 고른다(처음에는 브라우저 언어)
+  var TX={
+    ko:{h:'휴먼',o:'오크',name:'휴먼 vs 오크',tag:'이 땅의 주인을 가려라',load:'불러오는 중입니다',almost:'거의 다 됐습니다',fail:'불러오지 못했습니다',retry:'화면을 새로 고쳐 보세요.',err:'오류: ',loader:'게임 파일(loader)을 읽지 못했습니다',foot:'시험판 {R}차 · 유니티'},
+    en:{h:'Humans',o:'Orcs',name:'Humans vs Orcs',tag:'Decide who rules this land',load:'Loading',almost:'Almost there',fail:"Couldn't load the game",retry:'Please refresh the page.',err:'Error: ',loader:"Couldn't read the game files (loader)",foot:'Test build {R} · Unity'},
+    'zh-Hant':{h:'人類',o:'獸人',name:'人類 vs 獸人',tag:'決定這片土地的主人',load:'載入中',almost:'快好了',fail:'無法載入遊戲',retry:'請重新整理頁面。',err:'錯誤：',loader:'無法讀取遊戲檔案（loader）',foot:'測試版 第{R}版 · Unity'},
+    ja:{h:'ヒューマン',o:'オーク',name:'ヒューマン vs オーク',tag:'この地の主を決めよ',load:'読み込み中です',almost:'もうすぐです',fail:'読み込めませんでした',retry:'ページを再読み込みしてください。',err:'エラー：',loader:'ゲームファイル（loader）を読み込めませんでした',foot:'テスト版 第{R}弾 · Unity'}
+  };
+  function pickLang(){
+    var q=/[?&]lang=([\w-]+)/.exec(location.search), l=(q?q[1]:(navigator.language||'ko')).toLowerCase();
+    if(l.indexOf('ko')===0) return 'ko';
+    if(l.indexOf('ja')===0) return 'ja';
+    if(l.indexOf('zh')===0) return 'zh-Hant';
+    return 'en';
+  }
+  var lang=pickLang(), t=TX[lang];
+  document.documentElement.lang=lang;
+  var foot=t.foot.replace('{R}',R);
+  document.title=t.name+' · '+foot.split(' · ')[0];
+  var title=document.getElementById('title');
+  title.setAttribute('aria-label',t.name);
+  title.querySelector('.h').textContent=t.h; title.querySelector('.o').textContent=t.o;
+  if((t.h+t.o).length>8) title.classList.add('long');
+  document.getElementById('tag').textContent=t.tag;
+  document.getElementById('foot').textContent=foot;
   var canvas=document.getElementById('unity-canvas'),fill=document.getElementById('fill'),msg=document.getElementById('message'),err=document.getElementById('error'),loading=document.getElementById('loading');
-  function fail(e){msg.textContent='불러오지 못했습니다';err.textContent=(e&&e.message?e.message:String(e))+'\n화면을 새로 고쳐 보세요.';}
-  window.addEventListener('error',function(e){if(!window.__unity&&e&&e.message) err.textContent='오류: '+e.message;});
+  canvas.setAttribute('aria-label',t.name);
+  msg.textContent=t.load;
+  function fail(e){msg.textContent=t.fail;err.textContent=(e&&e.message?e.message:String(e))+'\n'+t.retry;}
+  window.addEventListener('error',function(e){if(!window.__unity&&e&&e.message) err.textContent=t.err+e.message;});
   // 긴 누르기 메뉴와 두 손가락 확대를 막는다(판을 밀 때 브라우저가 끼어들지 않게)
   document.addEventListener('contextmenu',function(e){e.preventDefault();});
   document.addEventListener('gesturestart',function(e){e.preventDefault();});
-  if(typeof createUnityInstance!=='function'){fail('게임 파일(loader)을 읽지 못했습니다');return;}
+  if(typeof createUnityInstance!=='function'){fail(t.loader);return;}
   createUnityInstance(canvas,{
     dataUrl:'Build/web.data.unityweb?v='+V,
     frameworkUrl:'Build/web.framework.js.unityweb?v='+V,
@@ -68,7 +98,7 @@ canvas{width:100%;height:100%;display:block;outline:none;background:var(--bg)}
     devicePixelRatio:Math.min(window.devicePixelRatio||1,2)
   },function(p){
     fill.style.width=Math.round(p*100)+'%';
-    if(p>=0.9) msg.textContent='거의 다 됐습니다';
+    if(p>=0.9) msg.textContent=t.almost;
   }).then(function(inst){
     window.__unity=inst;loading.classList.add('done');
   }).catch(fail);
